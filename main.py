@@ -13,12 +13,13 @@ def create_event(data, calendar):
         try:
             timestamp = int(item['timestamp'])
             date_str = datetime.fromtimestamp(timestamp).strftime('%Y%m%d')
-            event = Event()
+            nongli = f"{item.get('lMonth', '')}月{item.get('lDate', '')}"
             summary = ','.join(
                 [f['name'] for f in item.get('festivalInfoList', [])]) if 'festivalInfoList' in item else item.get(
                 'festivalList', '日历事件')
-            nongli = f"{item.get('lMonth', '')}月{item.get('lDate', '')}"
             description = f"【{nongli}】\n🎉 {summary}\n✅宜：{item['suit']}\n❌忌：{item['avoid']}"
+
+            event = Event()
             event.add('summary', f"★黄历★:{nongli}")
             event.add('dtstart', datetime.fromtimestamp(timestamp).date())
             event.add('dtend', datetime.fromtimestamp(timestamp).date() + timedelta(days=1))
@@ -30,6 +31,7 @@ def create_event(data, calendar):
             event.add('sequence', 0)
             event.add('status', 'CONFIRMED')
             event.add('transp', 'TRANSPARENT')
+
             calendar.add_component(event)
         except (ValueError, KeyError) as e:
             print(f"Error processing item: {item}, error: {e}")
@@ -57,37 +59,39 @@ def generate_ical_for_year(base_path, year, final_calendar):
 
 def create_final_ical(base_path):
     final_calendar = Calendar()
-    final_calendar.add('prodid', '-//My Calendar Product//mxm.dk//')
-    final_calendar.add('version', '2.0')
-    final_calendar.add('method', 'PUBLISH')
+
+    # 添加 VCALENDAR 头部信息
+    final_calendar.add('BEGIN', 'VCALENDAR')
+    final_calendar.add('VERSION', '2.0')
+    final_calendar.add('PRODID', '-//My Calendar Product//mxm.dk//')
+    final_calendar.add('METHOD', 'PUBLISH')
     final_calendar.add('X-WR-CALNAME', '节假日和黄历')
     final_calendar.add('X-WR-TIMEZONE', 'Asia/Shanghai')
     final_calendar.add('X-WR-CALDESC',
                        f'中国以及国际节假日，备注有黄历，更新日期:{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
 
-    timezone = '''
-    BEGIN:VTIMEZONE
-    TZID:Asia/Shanghai
-    X-LIC-LOCATION:Asia/Shanghai
-    BEGIN:STANDARD
-    TZOFFSETFROM:+0800
-    TZOFFSETTO:+0800
-    TZNAME:CST
-    DTSTART:19700101T000000
-    END:STANDARD
-    END:VTIMEZONE'''
+    # 添加 VTIMEZONE 信息
+    final_calendar.add('BEGIN', 'VTIMEZONE')
+    final_calendar.add('TZID', 'Asia/Shanghai')
+    final_calendar.add('X-LIC-LOCATION', 'Asia/Shanghai')
+    final_calendar.add('BEGIN', 'STANDARD')
+    final_calendar.add('TZOFFSETFROM', timedelta(hours=8))
+    final_calendar.add('TZOFFSETTO', timedelta(hours=8))
+    final_calendar.add('TZNAME', 'CST')
+    final_calendar.add('DTSTART', datetime(1970, 1, 1, 0, 0, 0))
+    final_calendar.add('END', 'STANDARD')
+    final_calendar.add('END', 'VTIMEZONE')
 
-    final_calendar.add('VTIMEZONE', timezone)
-
-    current_year = datetime.now().year
-    years = list(range(2022, 2031))
+    # 生成 2022 到 2030 年的 iCalendar 数据
+    years = range(2022, 2031)
     for year in years:
         generate_ical_for_year(base_path, year, final_calendar)
 
-    output_file = os.path.join(base_path, f'holidays_calendar_2022-2030.ics')
+    # 写入最终的 iCalendar 文件
+    output_file = os.path.join(base_path, './holidays_calendar_2022-2030.ics')
     with open(output_file, 'wb') as f:
         f.write(final_calendar.to_ical())
-    print(f"最终的iCalendar文件已成功生成：{output_file}")
+    print(f"最终的 iCalendar 文件已成功生成：{output_file}")
 
 
 def main():
