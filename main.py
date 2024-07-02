@@ -75,8 +75,8 @@ def create_final_ical(base_path):
     TZNAME:CST
     DTSTART:19700101T000000
     END:STANDARD
-    END:VTIMEZONE
-    '''
+    END:VTIMEZONE'''
+
     final_calendar.add('VTIMEZONE', timezone)
 
     current_year = datetime.now().year
