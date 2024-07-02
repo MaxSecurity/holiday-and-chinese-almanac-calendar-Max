@@ -7,7 +7,7 @@
 - 覆盖时间范围从 2022 年到 2030 年，涵盖了长期的节假日和黄历信息。
 - 可以在 iOS 日历中订阅，方便用户获取最新的节假日和黄历信息。
 
-[订阅定制](https://raw.githubusercontent.com/MaxSecurity/holiday-and-chinese-almanac-calendar-Max/main/holidays_calendar_2022-2030.ics)
+[订阅地址](https://raw.githubusercontent.com/MaxSecurity/holiday-and-chinese-almanac-calendar-Max/main/holidays_calendar_2022-2030.ics)
 
 ### 演示信息    
 ![演示](./Pic/1.png)
