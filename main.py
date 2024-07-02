@@ -1,7 +1,3 @@
-#!./usr/bin/env.python
-# .-*- coding: utf-8 -*-
-# ._author_.=."Max丶"
-# ._Email:_.=."max@chamd5.org"
 import os
 import json
 from icalendar import Calendar, Event, vText
@@ -59,39 +55,37 @@ def generate_ical_for_year(base_path, year, final_calendar):
 
 def create_final_ical(base_path):
     final_calendar = Calendar()
-
-    # 添加 VCALENDAR 头部信息
-    final_calendar.add('BEGIN', 'VCALENDAR')
-    final_calendar.add('VERSION', '2.0')
-    final_calendar.add('PRODID', '-//My Calendar Product//mxm.dk//')
-    final_calendar.add('METHOD', 'PUBLISH')
+    final_calendar.add('prodid', '-//My Calendar Product//mxm.dk//')
+    final_calendar.add('version', '2.0')
+    final_calendar.add('method', 'PUBLISH')
     final_calendar.add('X-WR-CALNAME', '节假日和黄历')
     final_calendar.add('X-WR-TIMEZONE', 'Asia/Shanghai')
     final_calendar.add('X-WR-CALDESC',
                        f'中国以及国际节假日，备注有黄历，更新日期:{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
 
-    # 添加 VTIMEZONE 信息
-    final_calendar.add('BEGIN', 'VTIMEZONE')
-    final_calendar.add('TZID', 'Asia/Shanghai')
-    final_calendar.add('X-LIC-LOCATION', 'Asia/Shanghai')
-    final_calendar.add('BEGIN', 'STANDARD')
-    final_calendar.add('TZOFFSETFROM', timedelta(hours=8))
-    final_calendar.add('TZOFFSETTO', timedelta(hours=8))
-    final_calendar.add('TZNAME', 'CST')
-    final_calendar.add('DTSTART', datetime(1970, 1, 1, 0, 0, 0))
-    final_calendar.add('END', 'STANDARD')
-    final_calendar.add('END', 'VTIMEZONE')
+    timezone = '''
+    BEGIN:VTIMEZONE
+    TZID:Asia/Shanghai
+    X-LIC-LOCATION:Asia/Shanghai
+    BEGIN:STANDARD
+    TZOFFSETFROM:+0800
+    TZOFFSETTO:+0800
+    TZNAME:CST
+    DTSTART:19700101T000000
+    END:STANDARD
+    END:VTIMEZONE'''
 
-    # 生成 2022 到 2030 年的 iCalendar 数据
-    years = range(2022, 2031)
+    final_calendar.add('VTIMEZONE', timezone)
+
+    current_year = datetime.now().year
+    years = list(range(2022, 2031))
     for year in years:
         generate_ical_for_year(base_path, year, final_calendar)
 
-    # 写入最终的 iCalendar 文件
-    output_file = os.path.join(base_path, './holidays_calendar_2022-2030.ics')
+    output_file = os.path.join(base_path, f'holidays_calendar_2022-2030.ics')
     with open(output_file, 'wb') as f:
         f.write(final_calendar.to_ical())
-    print(f"最终的 iCalendar 文件已成功生成：{output_file}")
+    print(f"最终的iCalendar文件已成功生成：{output_file}")
 
 
 def main():
