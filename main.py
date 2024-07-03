@@ -20,7 +20,7 @@ def create_event(data, calendar):
             event.add('dtstart', event_date.date())
             event.add('dtend', (event_date + timedelta(days=1)).date())
             event.add('dtstamp', datetime.now())
-            event.add('uid', f"{event_date.strftime('%Y%m%d')}_jr@zqzess")
+            event.add('uid', f"{event_date.strftime('%Y%m%d')}_jr")
             event.add('created', datetime.now())
             event.add('description', vText(description))
             event.add('last-modified', datetime.now())
