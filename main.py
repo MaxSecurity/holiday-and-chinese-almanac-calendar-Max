@@ -33,7 +33,8 @@ def create_event(data, calendar):
             alarm.add('action', 'DISPLAY')
             alarm.add('description', 'Event Reminder')
             alarm_time = event_date.replace(hour=8, minute=30, second=0, microsecond=0)
-            alarm.add('trigger', timedelta(hours=8, minutes=30))
+            trigger_time = alarm_time - event_date
+            alarm.add('trigger', trigger_time)
             event.add_component(alarm)
 
             calendar.add_component(event)
