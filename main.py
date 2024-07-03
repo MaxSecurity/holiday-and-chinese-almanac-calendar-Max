@@ -4,7 +4,7 @@ from icalendar import Calendar, Event, Alarm, vText, Timezone, TimezoneStandard
 from datetime import datetime, timedelta
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def create_event(data, calendar):
     for item in data['Result'][0]['DisplayData']['resultData']['tplData']['data']['almanac']:
@@ -38,6 +38,7 @@ def create_event(data, calendar):
             event.add_component(alarm)
 
             calendar.add_component(event)
+            logging.debug(f"Added event: {event}")
         except (ValueError, KeyError) as e:
             logging.error(f"Error processing item: {item}, error: {e}")
 
