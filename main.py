@@ -4,43 +4,42 @@ from icalendar import Calendar, Event, Alarm, vText, Timezone, TimezoneStandard
 from datetime import datetime, timedelta
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def create_event(data, calendar):
-    for item in data['Result'][0]['DisplayData']['resultData']['tplData']['data']['almanac']:
-        try:
-            timestamp = int(item['timestamp'])
-            event_date = datetime.fromtimestamp(timestamp)
-            nongli = f"{item.get('lMonth', '')}月{item.get('lDate', '')}"
-            summary = ','.join([f['name'] for f in item.get('festivalInfoList', [])]) if 'festivalInfoList' in item else item.get('festivalList', '日历事件')
-            description = f"【{nongli}】\n🎉 {summary}\n✅宜：{item['suit']}\n❌忌：{item['avoid']}"
+def create_event(item, calendar):
+    try:
+        timestamp = int(item['timestamp'])
+        event_date = datetime.fromtimestamp(timestamp)
+        nongli = f"{item.get('lMonth', '')}月{item.get('lDate', '')}"
+        summary = ','.join([f['name'] for f in item.get('festivalInfoList', [])]) if 'festivalInfoList' in item else item.get('festivalList', '日历事件')
+        description = f"【{nongli}】\n🎉 {summary}\n✅宜：{item['suit']}\n❌忌：{item['avoid']}"
 
-            event = Event()
-            event.add('summary', f"★黄历★:{nongli}")
-            event.add('dtstart', event_date.date())
-            event.add('dtend', (event_date + timedelta(days=1)).date())
-            event.add('dtstamp', datetime.now())
-            event.add('uid', f"{event_date.strftime('%Y%m%d')}_jr")
-            event.add('created', datetime.now())
-            event.add('description', vText(description))
-            event.add('last-modified', datetime.now())
-            event.add('sequence', 0)
-            event.add('status', 'CONFIRMED')
-            event.add('transp', 'TRANSPARENT')
+        event = Event()
+        event.add('summary', f"★黄历★:{nongli}")
+        event.add('dtstart', event_date.date())
+        event.add('dtend', (event_date + timedelta(days=1)).date())
+        event.add('dtstamp', datetime.now())
+        event.add('uid', f"{event_date.strftime('%Y%m%d')}_jr")
+        event.add('created', datetime.now())
+        event.add('description', vText(description))  # 使用vText处理描述文本
+        event.add('last-modified', datetime.now())
+        event.add('sequence', 0)
+        event.add('status', 'CONFIRMED')
+        event.add('transp', 'TRANSPARENT')
 
-            # 添加提醒事件
-            alarm = Alarm()
-            alarm.add('action', 'DISPLAY')
-            alarm.add('description', 'Event Reminder')
-            alarm_time = event_date.replace(hour=8, minute=30, second=0, microsecond=0)
-            trigger_time = timedelta(hours=8, minutes=30)
-            alarm.add('trigger', trigger_time)
-            event.add_component(alarm)
+        # 添加提醒事件
+        alarm = Alarm()
+        alarm.add('action', 'DISPLAY')
+        alarm.add('description', 'Event Reminder')
+        alarm_time = event_date.replace(hour=8, minute=30, second=0, microsecond=0)
+        trigger_time = timedelta(hours=8, minutes=30)
+        alarm.add('trigger', trigger_time)
+        event.add_component(alarm)
 
-            calendar.add_component(event)
-            logging.debug(f"Added event: {event}")
-        except Exception as e:
-            logging.error(f"Error processing item: {item}, error: {e}")
+        calendar.add_component(event)
+        logging.debug(f"Added event: {event}")
+    except Exception as e:
+        logging.error(f"Error processing item: {item}, error: {e}")
 
 def generate_ical_for_year(base_path, year, final_calendar):
     year_path = os.path.join(base_path, str(year))
@@ -55,11 +54,12 @@ def generate_ical_for_year(base_path, year, final_calendar):
             with open(file_path, 'r', encoding='utf-8') as f:
                 try:
                     data = json.load(f)
-                    create_event(data, final_calendar)
-                except json.JSONDecodeError as json_err:
-                    logging.error(f"Error decoding JSON from file: {file_path}, error: {json_err}")
-                except Exception as e:
-                    logging.error(f"Error processing file: {file_path}, error: {e}")
+                    for item in data['Result'][0]['DisplayData']['resultData']['tplData']['data']['almanac']:
+                        create_event(item, final_calendar)
+                except json.JSONDecodeError:
+                    logging.error(f"Error decoding JSON from file: {file_path}")
+                except KeyError:
+                    logging.error(f"Key error in file: {file_path}")
 
 def create_final_ical(base_path):
     final_calendar = Calendar()
