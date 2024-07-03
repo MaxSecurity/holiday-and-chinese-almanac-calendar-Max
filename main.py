@@ -16,12 +16,12 @@ def create_event(item, calendar):
 
         event = Event()
         event.add('summary', f"★黄历★:{nongli}")
-        event.add('dtstart', event_date.date())
-        event.add('dtend', (event_date + timedelta(days=1)).date())
+        event.add('dtstart', event_date)
+        event.add('dtend', event_date + timedelta(days=1))
         event.add('dtstamp', datetime.now())
         event.add('uid', f"{event_date.strftime('%Y%m%d')}_jr")
         event.add('created', datetime.now())
-        event.add('description', vText(description))  # 使用vText处理描述文本
+        event.add('description', vText(description))
         event.add('last-modified', datetime.now())
         event.add('sequence', 0)
         event.add('status', 'CONFIRMED')
@@ -31,9 +31,7 @@ def create_event(item, calendar):
         alarm = Alarm()
         alarm.add('action', 'DISPLAY')
         alarm.add('description', 'Event Reminder')
-        alarm_time = event_date.replace(hour=8, minute=30, second=0, microsecond=0)
-        trigger_time = timedelta(hours=8, minutes=30)
-        alarm.add('trigger', trigger_time)
+        alarm.add('trigger', timedelta(hours=8, minutes=30))
         event.add_component(alarm)
 
         calendar.add_component(event)

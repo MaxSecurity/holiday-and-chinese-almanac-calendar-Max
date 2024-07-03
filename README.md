@@ -1,5 +1,7 @@
 ### Holiday and Chinese Almanac Calendar
 
+# 在线订阅有 BUG直接导入正常 在线订阅解析不了很奇怪，目前未解决在线订阅问题
+
 这个项目提供了中国和国际节假日以及黄历信息，支持在 iOS 日历中订阅。项目特点包括：
 
 - 数据来源于 [OpenApiData](https://github.com/zqzess/openApiData)，确保数据的准确性和可靠性。
