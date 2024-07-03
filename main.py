@@ -1,6 +1,6 @@
 import os
 import json
-from icalendar import Calendar, Event, Alarm, vText
+from icalendar import Calendar, Event, Alarm, vText, Timezone, TimezoneStandard
 from datetime import datetime, timedelta
 import logging
 
@@ -33,7 +33,7 @@ def create_event(data, calendar):
             alarm.add('action', 'DISPLAY')
             alarm.add('description', 'Event Reminder')
             alarm_time = event_date.replace(hour=8, minute=30, second=0, microsecond=0)
-            trigger_time = alarm_time - event_date
+            trigger_time = timedelta(hours=8, minutes=30)
             alarm.add('trigger', trigger_time)
             event.add_component(alarm)
 
@@ -70,10 +70,10 @@ def create_final_ical(base_path):
     final_calendar.add('X-WR-CALDESC', f'中国以及国际节假日，备注有黄历，更新日期:{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
 
     # 设置时区信息
-    timezone = Calendar()
+    timezone = Timezone()
     timezone.add('TZID', 'Asia/Shanghai')
     timezone.add('X-LIC-LOCATION', 'Asia/Shanghai')
-    standard = Calendar()
+    standard = TimezoneStandard()
     standard.add('TZOFFSETFROM', timedelta(hours=8))
     standard.add('TZOFFSETTO', timedelta(hours=8))
     standard.add('TZNAME', 'CST')
