@@ -10,17 +10,17 @@ def create_event(data, calendar):
     for item in data['Result'][0]['DisplayData']['resultData']['tplData']['data']['almanac']:
         try:
             timestamp = int(item['timestamp'])
-            date_str = datetime.fromtimestamp(timestamp).strftime('%Y%m%d')
+            event_date = datetime.fromtimestamp(timestamp)
             nongli = f"{item.get('lMonth', '')}月{item.get('lDate', '')}"
             summary = ','.join([f['name'] for f in item.get('festivalInfoList', [])]) if 'festivalInfoList' in item else item.get('festivalList', '日历事件')
             description = f"【{nongli}】\n🎉 {summary}\n✅宜：{item['suit']}\n❌忌：{item['avoid']}"
 
             event = Event()
             event.add('summary', f"★黄历★:{nongli}")
-            event.add('dtstart', datetime.fromtimestamp(timestamp).date())
-            event.add('dtend', datetime.fromtimestamp(timestamp).date() + timedelta(days=1))
-            event.add('dtstamp', datetime.fromtimestamp(timestamp))
-            event.add('uid', f"{date_str}_jr@zqzess")
+            event.add('dtstart', event_date.date())
+            event.add('dtend', (event_date + timedelta(days=1)).date())
+            event.add('dtstamp', datetime.now())
+            event.add('uid', f"{event_date.strftime('%Y%m%d')}_jr@zqzess")
             event.add('created', datetime.now())
             event.add('description', vText(description))
             event.add('last-modified', datetime.now())
@@ -32,7 +32,7 @@ def create_event(data, calendar):
             alarm = Alarm()
             alarm.add('action', 'DISPLAY')
             alarm.add('description', 'Event Reminder')
-            alarm_time = datetime.fromtimestamp(timestamp).replace(hour=8, minute=30, second=0, microsecond=0)
+            alarm_time = event_date.replace(hour=8, minute=30, second=0, microsecond=0)
             alarm.add('trigger', timedelta(hours=8, minutes=30))
             event.add_component(alarm)
 
