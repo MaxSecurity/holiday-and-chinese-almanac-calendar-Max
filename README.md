@@ -11,9 +11,9 @@
 - 增加神仙圣诞信息
 - 增加干支信息
 
-[订阅地址](https://raw.githubusercontent.com/MaxSecurity/holiday-and-chinese-almanac-calendar-Max/main/holidays_calendar_2022-2030.ics)
+[订阅地址](https://raw.githubusercontent.com/MaxSecurity/holiday-and-chinese-almanac-calendar-Max/main/holidays_calendar_2025-2030.ics)
 
-[国内订阅地址](https://ghfast.top/https%3A//raw.githubusercontent.com/MaxSecurity/holiday-and-chinese-almanac-calendar-Max/main/holidays_calendar_2022-2030.ics)
+[国内订阅地址](https://ghfast.top/https%3A//raw.githubusercontent.com/MaxSecurity/holiday-and-chinese-almanac-calendar-Max/main/holidays_calendar_2025-2030.ics)
 
 ### 演示信息    
 ![演示](./Pic/1.png)
