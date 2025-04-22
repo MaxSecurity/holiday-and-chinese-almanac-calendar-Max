@@ -8,6 +8,8 @@
 - 支持无广告，用户体验友好。
 - 覆盖时间范围从 2022 年到 2030 年，涵盖了长期的节假日和黄历信息。
 - 可以在 iOS 日历中订阅，方便用户获取最新的节假日和黄历信息。
+- 增加神仙圣诞信息
+- 增加干支信息
 
 [订阅地址](https://raw.githubusercontent.com/MaxSecurity/holiday-and-chinese-almanac-calendar-Max/main/holidays_calendar_2022-2030.ics)
 
