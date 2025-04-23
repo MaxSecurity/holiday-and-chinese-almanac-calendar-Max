@@ -1,8 +1,6 @@
 import os
 import json
 import re
-import requests  # 用于HTTP请求爬取数据
-from bs4 import BeautifulSoup  # 用于解析HTML内容
 from icalendar import Calendar, Event, vText, vDatetime, Timezone, TimezoneStandard
 from datetime import datetime, timedelta
 import logging
@@ -10,31 +8,31 @@ import logging
 # 设置日志记录格式和级别
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# 爬取天干地支信息
-def fetch_ganzhi_from_web(year, month, day):
-    """从 http://www.chahuangli.com 爬取天干地支信息"""
-    url = f"http://www.chahuangli.com/{year}-{month}-{day}.html"
+# 加载干支数据
+def load_ganzhi_data(file_path):
+    """加载本地干支数据文件"""
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        # 提取天干地支信息所在的 <span> 标签
-        ganzhi_span = soup.find('span', string=re.compile(r'\S+年.*月.*日'))
-        if ganzhi_span:
-            return ganzhi_span.text.strip().replace("&nbsp;", " ")  # 替换HTML中的空格实体
-        else:
-            logging.warning(f"未在页面找到天干地支信息: {url}")
-            return "未知天干地支"
-    except requests.RequestException as e:
-        logging.error(f"请求天干地支信息失败: {url}, 错误: {e}")
-        return "未知天干地支"
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)  # 加载 JSON 数据
+    except FileNotFoundError:
+        logging.error(f"未找到文件：{file_path}")
+        return {}
+    except json.JSONDecodeError:
+        logging.error(f"解析 JSON 文件出错：{file_path}")
+        return {}
+
+# 从本地数据中获取干支信息
+def get_ganzhi_from_data(ganzhi_data, year, month, day):
+    """从本地干支数据中提取指定日期的干支信息"""
+    date_key = f"{year}-{month:02d}-{day:02d}"  # 格式化日期为 YYYY-MM-DD
+    return ganzhi_data.get(date_key, "未知天干地支")
 
 # **函数功能：加载节庆数据**
 def load_festival_data(file_path):
     """加载本地节庆数据文件"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)  # 加载 JSON 数据
+            data = json.load(f)
             return {item['日期']: item['节庆'] for item in data.get('祭祀日程', [])}
     except FileNotFoundError:
         logging.error(f"未找到文件：{file_path}")
@@ -48,7 +46,7 @@ def load_jieqi_data(file_path):
     """加载本地节气数据文件"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)  # 加载 JSON 数据
+            data = json.load(f)
             return {item['节气']: item['节庆'] for item in data.get('祭祀日程', [])}
     except FileNotFoundError:
         logging.error(f"未找到文件：{file_path}")
@@ -83,14 +81,14 @@ def add_jieqi_and_deity_info(festival_name, festival_details, jieqi_data, deity_
     return festival_details
 
 # **函数功能：创建日历事件**
-def create_event(item, calendar, festival_data, jieqi_data, deity_data):
+def create_event(item, calendar, festival_data, jieqi_data, deity_data, ganzhi_data):
     try:
         timestamp = int(item['timestamp'])
         event_date = datetime.fromtimestamp(timestamp)
         nongli = f"{item.get('lMonth', '')}月{item.get('lDate', '')}"
 
-        # 获取天干地支信息
-        ganzhi_info = fetch_ganzhi_from_web(event_date.year, event_date.month, event_date.day)
+        # 获取干支信息
+        ganzhi_info = get_ganzhi_from_data(ganzhi_data, event_date.year, event_date.month, event_date.day)
 
         festival_name = ','.join([f['name'] for f in item.get('festivalInfoList', [])]) if 'festivalInfoList' in item else item.get('festivalList', '')
         festival_name = clean_description(festival_name)
@@ -134,7 +132,7 @@ def create_event(item, calendar, festival_data, jieqi_data, deity_data):
         logging.error(f"Error processing item: {item}, error: {e}")
 
 # **函数功能：生成某年份的日历**
-def generate_ical_for_year(base_path, year, final_calendar, festival_data, jieqi_data, deity_data):
+def generate_ical_for_year(base_path, year, final_calendar, festival_data, jieqi_data, deity_data, ganzhi_data):
     year_path = os.path.join(base_path, str(year))
     if not os.path.exists(year_path):
         logging.warning(f"路径 {year_path} 不存在，跳过该年份。")
@@ -148,14 +146,14 @@ def generate_ical_for_year(base_path, year, final_calendar, festival_data, jieqi
                 try:
                     data = json.load(f)
                     for item in data['Result'][0]['DisplayData']['resultData']['tplData']['data']['almanac']:
-                        create_event(item, final_calendar, festival_data, jieqi_data, deity_data)
+                        create_event(item, final_calendar, festival_data, jieqi_data, deity_data, ganzhi_data)
                 except json.JSONDecodeError:
                     logging.error(f"Error decoding JSON from file: {file_path}")
                 except KeyError:
                     logging.error(f"Key error in file: {file_path}")
 
 # **函数功能：创建最终的 iCalendar 文件**
-def create_final_ical(base_path, festival_data, jieqi_data, deity_data):
+def create_final_ical(base_path, festival_data, jieqi_data, deity_data, ganzhi_data):
     final_calendar = Calendar()
     final_calendar.add('VERSION', '2.0')
     final_calendar.add('PRODID', '-//My Calendar Product//mxm.dk//')
@@ -175,9 +173,9 @@ def create_final_ical(base_path, festival_data, jieqi_data, deity_data):
     timezone.add_component(standard)
     final_calendar.add_component(timezone)
 
-    years = list(range(2025, 2031))
+    years = list(range(2025, 2051))
     for year in years:
-        generate_ical_for_year(base_path, year, final_calendar, festival_data, jieqi_data, deity_data)
+        generate_ical_for_year(base_path, year, final_calendar, festival_data, jieqi_data, deity_data, ganzhi_data)
 
     output_file = os.path.join(base_path, f'holidays_calendar_{years[0]}-{years[-1]}.ics')
     with open(output_file, 'wb') as f:
@@ -190,7 +188,8 @@ def main():
     festival_data = load_festival_data('./shenxian.json')
     jieqi_data = load_jieqi_data('./jieqi.json')
     deity_data = load_festival_data('./deity.json')
-    create_final_ical(base_path, festival_data, jieqi_data, deity_data)
+    ganzhi_data = load_ganzhi_data('./ganzhi_data.json')
+    create_final_ical(base_path, festival_data, jieqi_data, deity_data, ganzhi_data)
 
 if __name__ == "__main__":
     main()
