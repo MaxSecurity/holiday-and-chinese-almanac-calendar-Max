@@ -40,6 +40,20 @@ def load_festival_data(file_path):
         logging.error(f"解析 JSON 文件出错：{file_path}")
         return {}
 
+# 加载节气数据
+def load_jieqi_data(file_path):
+    """加载本地节气数据文件"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            return {item['节气']: item['节庆'] for item in data.get('祭祀日程', [])}
+    except FileNotFoundError:
+        logging.error(f"未找到文件：{file_path}")
+        return {}
+    except json.JSONDecodeError:
+        logging.error(f"解析 JSON 文件出错：{file_path}")
+        return {}
+
 # 清理描述中的无效数据或特殊字符
 def clean_description(text):
     """清理节庆名称或描述中的无效字符"""
@@ -48,7 +62,7 @@ def clean_description(text):
     return text.strip()  # 去除首尾空格
 
 # 创建日历事件
-def create_event(item, calendar, festival_data, ganzhi_data):
+def create_event(item, calendar, festival_data, jieqi_data, deity_data, ganzhi_data):
     try:
         timestamp = int(item['timestamp'])
         event_date = datetime.fromtimestamp(timestamp)
@@ -58,71 +72,95 @@ def create_event(item, calendar, festival_data, ganzhi_data):
         # 获取干支信息
         ganzhi_info = get_ganzhi_info(ganzhi_data, event_date_str)
 
-        # 获取节庆名称和描述
-        festival_name = ','.join([f['name'] for f in item.get('festivalInfoList', [])]) if 'festivalInfoList' in item else ''
+        # 获取节庆名称
+        festival_name = ','.join([f['name'] for f in item.get('festivalInfoList', [])]) if 'festivalInfoList' in item else item.get('festivalList', '')
         festival_name = clean_description(festival_name)
-        festival_description = festival_data.get(nongli, '无节庆信息')
 
-        # 构建事件描述
-        description = f"📅 **农历**: {nongli}\n🌀 **干支**: {ganzhi_info}\n"
+        # 获取节庆详细信息
+        festival_details = festival_data.get(nongli, '')
+        festival_details = clean_description(festival_details)
+
+        # 构建描述信息
+        description = []
         if festival_name:
-            description += f"🎉 **节庆**: {festival_name}\n"
-        description += f"✅ **宜**: {item['suit']}\n❌ **忌**: {item['avoid']}\n"
+            description.append(f"🎉 **节庆**: {festival_name}")
+        description.append(f"📅 **农历**: {nongli}")
+        description.append(f"🌀 **干支**: {ganzhi_info}")
+        if festival_details:
+            description.append(f"🌟 **神仙**: {festival_details}")
+        description.append(f"✅ **宜**: {item['suit']}")
+        description.append(f"❌ **忌**: {item['avoid']}")
 
         # 创建事件对象
         event = Event()
-        event.add('SUMMARY', f"★黄历★: {nongli}")
-        event.add('DESCRIPTION', vText(description))
-        event.add('DTSTART', vDatetime(event_date))
-        event.add('DTEND', vDatetime(event_date + timedelta(days=1)))
-        event.add('UID', f"{event_date.strftime('%Y%m%d')}@calendar")
-        event.add('DTSTAMP', vDatetime(datetime.utcnow()))
+        event.add('summary', vText(f"★黄历★:{nongli}"))
+        event.add('dtstart', vDatetime(event_date.replace(hour=8, minute=30, second=0, microsecond=0)))
+        event.add('dtend', vDatetime(event_date.replace(hour=9, minute=30, second=0, microsecond=0)))
+        event.add('description', vText("\n".join(description)))  # 合并描述为字符串
+        event.add('uid', f"{event_date.strftime('%Y%m%d')}_jr")
+        event.add('last-modified', vDatetime(datetime.now()))
+        event.add('sequence', 0)
 
+        # 添加事件到日历中
         calendar.add_component(event)
         logging.debug(f"Added event: {event}")
     except Exception as e:
         logging.error(f"Error processing item: {item}, error: {e}")
 
 # 创建最终的 iCalendar 文件
-def create_final_ical(base_path, festival_data, ganzhi_data):
+def create_final_ical(base_path, festival_data, jieqi_data, deity_data, ganzhi_data):
     final_calendar = Calendar()
     final_calendar.add('VERSION', '2.0')
     final_calendar.add('PRODID', '-//My Calendar Product//mxm.dk//')
     final_calendar.add('METHOD', 'PUBLISH')
     final_calendar.add('X-WR-CALNAME', '节假日和黄历')
+    final_calendar.add('X-WR-CALDESC', f'包含节假日、黄历和干支信息的日历文件')
     final_calendar.add('X-WR-TIMEZONE', 'Asia/Shanghai')
-    final_calendar.add('X-WR-CALDESC', '中国黄历及节假日')
 
-    years = list(range(2025, 2051))
+    # 添加时区信息
+    timezone = Timezone()
+    timezone.add('TZID', 'Asia/Shanghai')
+    timezone.add('X-LIC-LOCATION', 'Asia/Shanghai')
+    standard = TimezoneStandard()
+    standard.add('TZOFFSETFROM', timedelta(hours=8))
+    standard.add('TZOFFSETTO', timedelta(hours=8))
+    standard.add('TZNAME', 'CST')
+    standard.add('DTSTART', datetime(1970, 1, 1, 0, 0, 0))
+    timezone.add_component(standard)
+    final_calendar.add_component(timezone)
+
+    # 遍历年份生成事件
+    years = list(range(2025, 2031))
     for year in years:
         year_path = os.path.join(base_path, str(year))
         if not os.path.exists(year_path):
             logging.warning(f"路径 {year_path} 不存在，跳过该年份。")
             continue
-
         for file_name in os.listdir(year_path):
             if file_name.endswith('.json'):
                 file_path = os.path.join(year_path, file_name)
                 with open(file_path, 'r', encoding='utf-8') as f:
                     try:
                         data = json.load(f)
-                        for item in data.get('Result', [])[0].get('DisplayData', {}).get('resultData', {}).get('tplData', {}).get('data', {}).get('almanac', []):
-                            create_event(item, final_calendar, festival_data, ganzhi_data)
+                        for item in data['Result'][0]['DisplayData']['resultData']['tplData']['data']['almanac']:
+                            create_event(item, final_calendar, festival_data, jieqi_data, deity_data, ganzhi_data)
                     except Exception as e:
-                        logging.error(f"Error processing file: {file_path}, error: {e}")
+                        logging.error(f"Error processing file {file_path}: {e}")
 
-    # 输出 iCalendar 文件
+    # 写入最终的 iCalendar 文件
     output_file = os.path.join(base_path, 'holidays_calendar.ics')
     with open(output_file, 'wb') as f:
         f.write(final_calendar.to_ical())
-    logging.info(f"iCalendar 文件已生成: {output_file}")
+    logging.info(f"iCalendar文件已生成：{output_file}")
 
-# 主函数
+# 主函数入口
 def main():
     base_path = './openApiData/calendar_new'
-    festival_data = load_festival_data('./shenxian.json')  # 节庆数据
-    ganzhi_data = load_ganzhi_data('./ganzhi_data.json')  # 干支数据
-    create_final_ical(base_path, festival_data, ganzhi_data)
+    festival_data = load_festival_data('./shenxian.json')
+    jieqi_data = load_jieqi_data('./jieqi.json')
+    deity_data = load_festival_data('./deity.json')
+    ganzhi_data = load_ganzhi_data('./ganzhi_data.json')  # 加载干支数据
+    create_final_ical(base_path, festival_data, jieqi_data, deity_data, ganzhi_data)
 
 if __name__ == "__main__":
     main()
