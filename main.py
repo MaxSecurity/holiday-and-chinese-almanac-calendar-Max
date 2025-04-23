@@ -15,19 +15,18 @@ def load_ganzhi_data(file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             return json.load(f)  # 加载 JSON 数据
     except FileNotFoundError:
-        logging.error(f"未找到文件：{file_path}")
+        logging.error(f"未找到干支数据文件：{file_path}")
         return {}
     except json.JSONDecodeError:
-        logging.error(f"解析 JSON 文件出错：{file_path}")
+        logging.error(f"解析干支 JSON 文件出错：{file_path}")
         return {}
 
-# 从本地数据中获取干支信息
-def get_ganzhi_from_data(ganzhi_data, year, month, day):
-    """从本地干支数据中提取指定日期的干支信息"""
-    date_key = f"{year}-{month:02d}-{day:02d}"  # 格式化日期为 YYYY-MM-DD
-    return ganzhi_data.get(date_key, "未知天干地支")
+# 从干支数据中提取指定日期的干支信息
+def get_ganzhi_info(ganzhi_data, date):
+    """从干支数据中获取指定日期的干支信息"""
+    return ganzhi_data.get(date, "未知干支")  # 如果日期不存在，返回默认值
 
-# **函数功能：加载节庆数据**
+# 加载节庆数据
 def load_festival_data(file_path):
     """加载本地节庆数据文件"""
     try:
@@ -41,7 +40,7 @@ def load_festival_data(file_path):
         logging.error(f"解析 JSON 文件出错：{file_path}")
         return {}
 
-# **函数功能：加载节气数据**
+# 加载节气数据
 def load_jieqi_data(file_path):
     """加载本地节气数据文件"""
     try:
@@ -55,14 +54,14 @@ def load_jieqi_data(file_path):
         logging.error(f"解析 JSON 文件出错：{file_path}")
         return {}
 
-# **函数功能：清理描述中的无效数据或特殊字符**
+# 清理描述中的无效数据或特殊字符
 def clean_description(text):
     """清理节庆名称或描述中的无效字符"""
     text = text.replace("\\,", ",")  # 移除不必要的转义字符
     text = re.sub(r',六九', '', text)  # 删除所有 "六九" 字符
     return text.strip()  # 去除首尾空格
 
-# **函数功能：将节气和神明诞辰信息添加到节庆描述中**
+# 添加节气和神明诞辰信息
 def add_jieqi_and_deity_info(festival_name, festival_details, jieqi_data, deity_data):
     """将节气数据和神明诞辰信息分别添加到节庆描述中"""
     jieqi_info = ""
@@ -80,15 +79,16 @@ def add_jieqi_and_deity_info(festival_name, festival_details, jieqi_data, deity_
     festival_details += jieqi_info + deity_info
     return festival_details
 
-# **函数功能：创建日历事件**
+# 创建日历事件
 def create_event(item, calendar, festival_data, jieqi_data, deity_data, ganzhi_data):
     try:
         timestamp = int(item['timestamp'])
         event_date = datetime.fromtimestamp(timestamp)
         nongli = f"{item.get('lMonth', '')}月{item.get('lDate', '')}"
+        event_date_str = event_date.strftime("%Y-%m-%d")  # 格式化日期为字符串
 
         # 获取干支信息
-        ganzhi_info = get_ganzhi_from_data(ganzhi_data, event_date.year, event_date.month, event_date.day)
+        ganzhi_info = get_ganzhi_info(ganzhi_data, event_date_str)
 
         festival_name = ','.join([f['name'] for f in item.get('festivalInfoList', [])]) if 'festivalInfoList' in item else item.get('festivalList', '')
         festival_name = clean_description(festival_name)
@@ -131,7 +131,7 @@ def create_event(item, calendar, festival_data, jieqi_data, deity_data, ganzhi_d
     except Exception as e:
         logging.error(f"Error processing item: {item}, error: {e}")
 
-# **函数功能：生成某年份的日历**
+# 生成某年份的日历
 def generate_ical_for_year(base_path, year, final_calendar, festival_data, jieqi_data, deity_data, ganzhi_data):
     year_path = os.path.join(base_path, str(year))
     if not os.path.exists(year_path):
@@ -152,7 +152,7 @@ def generate_ical_for_year(base_path, year, final_calendar, festival_data, jieqi
                 except KeyError:
                     logging.error(f"Key error in file: {file_path}")
 
-# **函数功能：创建最终的 iCalendar 文件**
+# 创建最终的 iCalendar 文件
 def create_final_ical(base_path, festival_data, jieqi_data, deity_data, ganzhi_data):
     final_calendar = Calendar()
     final_calendar.add('VERSION', '2.0')
@@ -182,13 +182,13 @@ def create_final_ical(base_path, festival_data, jieqi_data, deity_data, ganzhi_d
         f.write(final_calendar.to_ical())
     logging.info(f"最终的iCalendar文件已成功生成：{output_file}")
 
-# **主函数入口**
+# 主函数入口
 def main():
     base_path = './openApiData/calendar_new'
     festival_data = load_festival_data('./shenxian.json')
     jieqi_data = load_jieqi_data('./jieqi.json')
     deity_data = load_festival_data('./deity.json')
-    ganzhi_data = load_ganzhi_data('./ganzhi_data.json')
+    ganzhi_data = load_ganzhi_data('./ganzhi_data.json')  # 加载干支数据
     create_final_ical(base_path, festival_data, jieqi_data, deity_data, ganzhi_data)
 
 if __name__ == "__main__":
