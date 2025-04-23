@@ -173,11 +173,11 @@ def create_final_ical(base_path, festival_data, jieqi_data, deity_data, ganzhi_d
     timezone.add_component(standard)
     final_calendar.add_component(timezone)
 
-    years = list(range(2025, 2031))
+    years = list(range(2025, 2051))
     for year in years:
         generate_ical_for_year(base_path, year, final_calendar, festival_data, jieqi_data, deity_data, ganzhi_data)
 
-    output_file = os.path.join(base_path, f'holidays_calendar_{years[0]}-{years[-1]}.ics')
+    output_file = os.path.join(base_path, f'holidays_calendar.ics')
     with open(output_file, 'wb') as f:
         f.write(final_calendar.to_ical())
     logging.info(f"最终的iCalendar文件已成功生成：{output_file}")
