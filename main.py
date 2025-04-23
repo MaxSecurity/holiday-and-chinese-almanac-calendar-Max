@@ -93,7 +93,7 @@ def create_final_ical(base_path, festival_data, ganzhi_data):
     final_calendar.add('X-WR-TIMEZONE', 'Asia/Shanghai')
     final_calendar.add('X-WR-CALDESC', '中国黄历及节假日')
 
-    years = list(range(2025, 2031))
+    years = list(range(2025, 2051))
     for year in years:
         year_path = os.path.join(base_path, str(year))
         if not os.path.exists(year_path):
