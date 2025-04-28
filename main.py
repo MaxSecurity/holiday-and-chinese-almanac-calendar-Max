@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import logging
 
 # 设置日志记录格式和级别
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # 加载干支数据
 def load_ganzhi_data(file_path):
@@ -61,7 +61,7 @@ def clean_description(text):
     text = re.sub(r',六九', '', text)  # 删除所有 "六九" 字符
     return text.strip()  # 去除首尾空格
 
-# 添加节气和神明诞辰信息
+# 添加节气和神明信息
 def add_jieqi_and_deity_info(festival_name, festival_details, jieqi_data, deity_data):
     """将节气数据和神明诞辰信息分别添加到节庆描述中"""
     jieqi_info = ""
