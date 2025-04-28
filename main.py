@@ -173,7 +173,7 @@ def create_final_ical(base_path, festival_data, jieqi_data, deity_data, ganzhi_d
     timezone.add_component(standard)
     final_calendar.add_component(timezone)
 
-    years = list(range(2025, 2051))
+    years = list(range(2025, 2035))
     for year in years:
         generate_ical_for_year(base_path, year, final_calendar, festival_data, jieqi_data, deity_data, ganzhi_data)
 
